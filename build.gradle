@@ -1,0 +1,78 @@
+buildscript {
+  ext {
+    springBootVersion = "1.5.4.RELEASE"
+  }
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+      classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+  }
+}
+
+apply plugin: "java"
+apply plugin: "org.springframework.boot"
+
+version = "1.0.0"
+sourceCompatibility = 1.8
+
+repositories {
+  mavenCentral()
+}
+dependencies {
+
+    compile('com.querydsl:querydsl-apt:4.2.1')
+    compile('com.querydsl:querydsl-sql:4.2.1')
+    compile('com.querydsl:querydsl-sql-spring:4.2.1')
+    compile('com.querydsl:querydsl-jpa:4.2.1')
+
+    compile("org.springframework.boot:spring-boot-starter-jdbc")
+    compile("org.springframework.boot:spring-boot-starter-data-jpa")
+    compile('org.springframework.boot:spring-boot-starter')
+    compile('org.springframework.boot:spring-boot-starter-aop')
+    compile("org.springframework.boot:spring-boot-starter-web")
+
+    compile "org.lazyluke:log4jdbc-remix:0.2.7"
+    compile("org.bgee.log4jdbc-log4j2:log4jdbc-log4j2-jdbc4.1:1.16")
+    compile('org.springframework.boot:spring-boot-starter-actuator')
+    compile('org.springframework.boot:spring-boot-starter-data-jpa')
+    runtime('mysql:mysql-connector-java')
+    compile('org.projectlombok:lombok')
+    testRuntime('com.h2database:h2')
+    testCompile('org.dbunit:dbunit:2.5.1')
+    testCompile('org.springframework.boot:spring-boot-starter-test')
+
+}
+
+sourceSets {
+    generated
+}
+sourceSets.generated.java.srcDirs = ['build/classes/main']
+configurations {
+    querydslapt
+}
+
+/**** QueryDSL Class Generate Script to avoid lombok error ****/
+def queryDslOutput = file("src/main/generated")
+sourceSets {
+    main {
+        java {
+            srcDir queryDslOutput
+        }
+    }
+}
+
+task generateQueryDSL(type: JavaCompile, group: 'build') {
+    source = sourceSets.main.java
+    classpath = configurations.compile
+    destinationDir = queryDslOutput
+    options.compilerArgs = [
+            "-proc:only",
+            "-processor", 'com.querydsl.apt.jpa.JPAAnnotationProcessor,lombok.launch.AnnotationProcessorHider$AnnotationProcessor'
+    ]
+}
+compileJava.dependsOn(generateQueryDSL)
+
+clean {
+    delete queryDslOutput
+}
